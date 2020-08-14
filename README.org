@@ -1,0 +1,9 @@
+
+* cdview
+
+"cdview" is a visualization soft for molecular simulation 
+
+** Offical Web Page
+
+ - [[https://polymer.apphy.u-fukui.ac.jp/~koishi/cdview.php?lang=en][cdview web page (English)]]
+ - [[https://polymer.apphy.u-fukui.ac.jp/~koishi/cdview.php][cdview web ページ（日本語）]]
