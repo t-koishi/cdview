@@ -6,20 +6,22 @@ CC := x86_64-w64-mingw32-gcc # 64 bit
 #CC := i686-w64-mingw32-gcc  # 32 bit
 CXX := x86_64-w64-mingw32-g++
 
+# Please set following variables to compile the target in Makefile.local
+# GLUT_INCLUDE_DIR, GLUT_LIB_DIR,
+# GLEW_INCLUDE_DIR, GLEW_LIB_DIR,
+# GLEXT_INCLUDE_DIR, GLM_INCLUDE_DIR
 -include Makefile.local
 
+OPT := -Wreturn-type
 ifeq ($(OP),true)
-OPT += -O3
+OPT += -O3 -DNDEBUG
 endif # $(OP)
 ifeq ($(DS),true)
 OPT += -g
-else
-OPT += -DNDEBUG
 endif # $(DS)
 ifeq ($(WA),true)
 #OPT += -Wunused -Werror -u
-OPT += -Wno-unused-variable -Wall
-# OPT += -Wall -Werror -u
+OPT += -Wall -Werror -u
 endif # $(WA)
 
 GL_FLAGS := -I$(GLUT_INCLUDE_DIR)  -DGLUT -DFREEGLUT_STATIC
@@ -29,11 +31,11 @@ ifeq ($(GLSL),true)
 GL_FLAGS += -DUSE_GLSL -DGLEW_STATIC -I$(GLEW_INCLUDE_DIR) -I$(GLEXT_INCLUDE_DIR) \
             -DUSE_GLM -I$(GLM_INCLUDE_DIR)
 GL_LIBS += -L$(GLEW_LIB_DIR)  -lglew32s
-endif
+endif # $(GLSL)
 
 ifndef KS_LIB_DIR
 KS_LIB_DIR := ks_lib
-endif
+endif # $(KS_LIB_DIR)
 
 CFLAGS := -I$(KS_LIB_DIR) $(GL_FLAGS) $(OPT) \
            -DUSE_PRINTF_FFLUSH_STDOUT_ALWAYS
@@ -61,6 +63,11 @@ DEPS := $(subst .c,.d,$(SRCS)) $(KS_DEPS) $(KSP_DEPS)
 
 TARGET := cdview
 
+ifeq ($(OS),Windows_NT)
+TARGET := $(addsuffix .exe,$(TARGET))
+endif # $(OS)
+
+.PHONY: all
 all : $(TARGET)
 
 $(TARGET) : $(OBJS)
@@ -82,28 +89,19 @@ ifeq ($(findstring clean,${MAKECMDGOALS}),)
   -include ${DEPS}
 endif
 
+.PHONY: install
 install: 
-	cp cdview.exe /home/koishi/bin/
+	cp $(TARGET) $(HOME)/bin/
 
-VER_LINE=$(shell grep CV_VER cv304.h)
-VER=$(wordlist 3,3,$(VER_LINE))
+CV_VER_MAJOR=$(shell grep CV_VER_MAJOR cv304.h | sed -e 's/\s*CV_VER_MAJOR = \([0-9]*\),/\1/')
+CV_VER_MINOR=$(shell grep CV_VER_MINOR cv304.h | sed -e 's/\s*CV_VER_MINOR = \([0-9]*\),/\1/')
+CV_VER_TEENY=$(shell grep CV_VER_TEENY cv304.h | sed -e 's/\s*CV_VER_TEENY = \([0-9]*\)/\1/')
+VER=$(shell printf "%d_%d_%d" $(CV_VER_MAJOR) $(CV_VER_MINOR) $(CV_VER_TEENY))
 
-update:
-	cd ..; zip -r cdview.zip cdview/cdview.exe; mv cdview.zip cdview/cdview$(VER)_win.zip
-	cp cdview_main.c cdview_src/
-	cp cv304.c cv304.h fv033.c fv033.h cdview_src/
-	cp $(KS_HEDS) cdview_src/
-	cp $(subst .h,.c,$(KS_HEDS)) cdview_src/
-	cp Makefile.linux cdview_src/Makefile
-	sed -i 's/..\/ks_lib\//.\//' cdview_src/Makefile
-	chmod a-x cdview_src/*
-	mv cdview_src cdview$(VER)_src
-#	zip -r cdview$(VER)_src.zip cdview$(VER)_src/
-	tar zcvf cdview$(VER)_src.tar.gz cdview$(VER)_src/
-	mv cdview$(VER)_src cdview_src/
+.PHONY: zip
+zip:
+	zip cdview$(VER).zip $(TARGET)
 
-clean_all :
-	rm *.o cdview.exe $(KS_LIB_DIR)/*.o
-
+.PHONY: clean
 clean :
-	rm *.o cdview.exe
+	rm *.o $(TARGET)
